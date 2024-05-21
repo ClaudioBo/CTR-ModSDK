@@ -157,9 +157,11 @@
     <ClCompile Include="..\..\..\..\..\externals\enet\unix.c" />
     <ClCompile Include="..\..\..\..\..\externals\enet\win32.c" />
     <ClCompile Include="SV_main.c" />
+    <ClCompile Include="replay\replay.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\decompile\General\AltMods\OnlineCTR\global.h" />
+    <ClInclude Include="replay\replay.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

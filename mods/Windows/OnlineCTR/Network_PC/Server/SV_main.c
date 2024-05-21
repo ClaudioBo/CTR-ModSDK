@@ -13,6 +13,8 @@
 #define WINDOWS_INCLUDE
 #include "../../../../../decompile/General/AltMods/OnlineCTR/global.h"
 
+#include "replay/replay.h"
+
 #pragma comment (lib, "Ws2_32.lib")
 
 #define MAX_CLIENTS 8
@@ -20,6 +22,8 @@
 int levelPlayed = 0;
 unsigned char clientCount = 0;
 int boolTakingConnections = 0;
+
+ReplayData replay;
 
 // must match socket
 int boolLoadAll = 0;
