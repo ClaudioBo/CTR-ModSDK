@@ -5,6 +5,7 @@
 
 #define MAX_PLAYERS 8
 #define MAX_NAME_LENGTH 32
+#define MAX_FRAME_LIMIT 1200 // 1 frame each 0.5 secs, limit to 10 mins
 
 typedef struct {
     int player_id;
@@ -13,28 +14,41 @@ typedef struct {
     int num_laps;
     float *lap_times;
     float total_time;
-} PlayerData;
+} RecordPlayerData;
 
 typedef struct {
     int track_id;
     int num_players;
+	int num_laps;
     time_t timestamp;
+	char replay_version;
 } ReplayHeader;
 
 typedef struct {
     int player_id;
-    float x, y, z;
-} PlayerPosition;
+    unsigned char x, y, z;
+    unsigned char button_hold, rotation1, rotation2;
+
+} RecordPlayerPosition;
+
+typedef struct {
+	int frameIndex;
+	RecordPlayerPosition *positions;
+} ReplayFrames;
 
 typedef struct {
     ReplayHeader header;
-    PlayerData players[MAX_PLAYERS];
-    size_t num_positions;
-    PlayerPosition *positions;
+	RecordPlayerData player_datas[MAX_PLAYERS];
+	size_t total_frames;
+    ReplayFrames *frames;
 } ReplayData;
 
-void initialize_replay_data(int track_id, int num_players);
-void record_player_positions(PlayerPosition *positions, size_t num_positions);
-void write_replay_to_file(const char *filename);
+ReplayData initialize_replay_data(int track_id, int num_players, int num_laps);
+void register_player_to_replay(ReplayData replay, int player_id, char player_name, unsigned char character_id);
+void store_player_new_laptime(ReplayData *replay, int player_id, float lap_time);
+int find_replayplayer_by_id(ReplayData *replay, int player_id);
+void advance_next_frame(ReplayData *replay);
+void record_player_positions(ReplayData *replay, RecordPlayerPosition frameInfo);
+void write_replay_to_file(ReplayData *replay);
 
 #endif
