@@ -1,17 +1,28 @@
 
 #ifndef WINDOWS_INCLUDE
-#include <common.h>
+	#include <common.h>
+	#include <time.h>
+	#include <windows.h>
 #endif
 
 #ifdef __GNUC__
-#define STATIC_ASSERT2(test_for_true) \
-    _Static_assert((test_for_true), "(" #test_for_true ") failed")
+	#include <unistd.h> // for the 'usleep()' function
+	#define STATIC_ASSERT2(test_for_true, message) _Static_assert((test_for_true), message) // GCC
 #else
-#define STATIC_ASSERT2 static_assert
+	#define STATIC_ASSERT2 static_assert // Visual Studio Code
 #endif
 
-enum ServerList
-{
+#define true				1
+#define false				0
+
+#define DONT_SHOW_NAME		0
+#define SHOW_NAME			1
+
+#define DEFAULT_IP			"127.0.0.1" // the default IP address we want to use for private lobbies
+#define IP_ADDRESS_SIZE		16 // assuming IPv4 (which is "xxx.xxx.xxx.xxx" + '\0')
+#define PORT_SIZE			6 // the port number as a string (0-65535 + '\0')
+
+enum ServerList {
 	EUR_LOOPER_1,
 	EUR_LOOPER_2,
 	USA_NIKO_1,
@@ -108,7 +119,7 @@ enum ServerGiveMessageType
 	SG_COUNT
 };
 
-// Variety of opcodes (start load / start race)
+// variety of opcodes (start load / start race)
 struct SG_Header
 {
 	// 15 types, 15 bytes max
@@ -208,12 +219,12 @@ struct SG_MessageEndRace
 	unsigned char time[3];
 };
 
-STATIC_ASSERT2(sizeof(struct SG_Header) == 1);
-STATIC_ASSERT2(sizeof(struct SG_MessageName) == 14);
-STATIC_ASSERT2(sizeof(struct SG_MessageCharacter) == 2);
-STATIC_ASSERT2(sizeof(struct SG_MessageTrack) == 2);
-STATIC_ASSERT2(sizeof(struct SG_EverythingKart) == 13);
-STATIC_ASSERT2(sizeof(struct SG_MessageEndRace) == 5);
+STATIC_ASSERT2(sizeof(struct SG_Header) == 1, "Size of SG_Header must be 1 byte");
+STATIC_ASSERT2(sizeof(struct SG_MessageName) == 14, "Size of SG_MessageName must be 14 bytes");
+STATIC_ASSERT2(sizeof(struct SG_MessageCharacter) == 2, "Size of SG_MessageCharacter must be 2 bytes");
+STATIC_ASSERT2(sizeof(struct SG_MessageTrack) == 2, "Size of SG_MessageTrack must be 2 bytes");
+STATIC_ASSERT2(sizeof(struct SG_EverythingKart) == 13, "Size of SG_EverythingKart must be 13 bytes");
+STATIC_ASSERT2(sizeof(struct SG_MessageEndRace) == 5, "Size of SG_MessageEndRace must be 5 bytes");
 
 enum ClientGiveMessageType
 {
@@ -306,14 +317,14 @@ struct CG_MessageEndRace
 	unsigned char time[3];
 };
 
-STATIC_ASSERT2(sizeof(struct CG_Header) == 1);
-STATIC_ASSERT2(sizeof(struct CG_MessageName) == 13);
-STATIC_ASSERT2(sizeof(struct CG_MessageCharacter) == 2);
-STATIC_ASSERT2(sizeof(struct CG_MessageTrack) == 2);
-STATIC_ASSERT2(sizeof(struct CG_EverythingKart) == 13);
-STATIC_ASSERT2(sizeof(struct CG_MessageEndRace) == 4);
+STATIC_ASSERT2(sizeof(struct CG_Header) == 1, "Size of CG_Header must be 1 byte");
+STATIC_ASSERT2(sizeof(struct CG_MessageName) == 13, "Size of CG_MessageName must be 13 bytes");
+STATIC_ASSERT2(sizeof(struct CG_MessageCharacter) == 2, "Size of CG_MessageCharacter must be 2 bytes");
+STATIC_ASSERT2(sizeof(struct CG_MessageTrack) == 2, "Size of CG_MessageTrack must be 2 bytes");
+STATIC_ASSERT2(sizeof(struct CG_EverythingKart) == 13, "Size of CG_EverythingKart must be 13 bytes");
+STATIC_ASSERT2(sizeof(struct CG_MessageEndRace) == 4, "Size of CG_MessageEndRace must be 4 bytes");
 
-// my functions
+// OnlineCTR functions
 void StatePC_Launch_EnterPID();
 void StatePC_Launch_EnterIP();
 void StatePC_Launch_ConnectFailed();
@@ -327,33 +338,36 @@ void StatePC_Game_WaitForRace();
 void StatePC_Game_StartRace();
 void StatePC_Game_EndRace();
 
+// console functions
+void PrintBanner(char show_name);
+void StartAnimation();
+void StopAnimation();
+
 #endif
 
 #ifndef WINDOWS_INCLUDE
+	// set zero to fix DuckStation,
+	// is it needed on console?
+	#define USE_K1 0
 
-// set zero to fix DuckStation,
-// is it needed on console?
-#define USE_K1 0
+	#if USE_K1 == 1
+		register struct OnlineCTR* octr asm("k1");
+	#else
+		static struct OnlineCTR* octr = (struct OnlineCTR*)0x8000C000;
+	#endif
 
-#if USE_K1 == 1
-register struct OnlineCTR* octr asm("k1");
-#else
-static struct OnlineCTR* octr = (struct OnlineCTR*)0x8000C000;
-#endif
-
-// my functions
-void StatePS1_Launch_EnterPID();
-void StatePS1_Launch_EnterIP();
-void StatePS1_Launch_ConnectFailed();
-void StatePS1_Launch_FirstInit();
-void StatePS1_Lobby_AssignRole();
-void StatePS1_Lobby_HostTrackPick();
-void StatePS1_Lobby_GuestTrackWait();
-void StatePS1_Lobby_CharacterPick();
-void StatePS1_Lobby_WaitForLoading();
-void StatePS1_Lobby_StartLoading();
-void StatePS1_Game_WaitForRace();
-void StatePS1_Game_StartRace();
-void StatePS1_Game_EndRace();
-
+	// my functions
+	void StatePS1_Launch_EnterPID();
+	void StatePS1_Launch_EnterIP();
+	void StatePS1_Launch_ConnectFailed();
+	void StatePS1_Launch_FirstInit();
+	void StatePS1_Lobby_AssignRole();
+	void StatePS1_Lobby_HostTrackPick();
+	void StatePS1_Lobby_GuestTrackWait();
+	void StatePS1_Lobby_CharacterPick();
+	void StatePS1_Lobby_WaitForLoading();
+	void StatePS1_Lobby_StartLoading();
+	void StatePS1_Game_WaitForRace();
+	void StatePS1_Game_StartRace();
+	void StatePS1_Game_EndRace();
 #endif
