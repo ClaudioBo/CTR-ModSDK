@@ -10,7 +10,7 @@
 typedef struct {
     int player_id;
     char name[MAX_NAME_LENGTH];
-    int character_id;
+    unsigned char character_id;
     int num_laps;
     float *lap_times;
     float total_time;
@@ -38,17 +38,17 @@ typedef struct {
 
 typedef struct {
     ReplayHeader header;
-	RecordPlayerData player_datas[MAX_PLAYERS];
+	RecordPlayerData *player_datas;
 	size_t total_frames;
     ReplayFrames *frames;
 } ReplayData;
 
-ReplayData initialize_replay_data(int track_id, int num_players, int num_laps);
-void register_player_to_replay(ReplayData replay, int player_id, char player_name, unsigned char character_id);
+ReplayData* initialize_replay_data(int track_id, int num_players, int num_laps);
+void register_player_to_replay(ReplayData *replay, int player_id, const char *player_name, unsigned char character_id);
 void store_player_new_laptime(ReplayData *replay, int player_id, float lap_time);
 int find_replayplayer_by_id(ReplayData *replay, int player_id);
 void advance_next_frame(ReplayData *replay);
 void record_player_positions(ReplayData *replay, RecordPlayerPosition frameInfo);
-void write_replay_to_file(ReplayData *replay);
+int write_replay_to_file(ReplayData *replay, const char* filename);
 
 #endif

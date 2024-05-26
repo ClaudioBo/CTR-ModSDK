@@ -23,7 +23,8 @@ int levelPlayed = 0;
 unsigned char clientCount = 0;
 int boolTakingConnections = 0;
 
-ReplayData replay;
+ReplayData* replay;
+int selectedLaps;
 
 // must match socket
 int boolLoadAll = 0;
@@ -284,11 +285,12 @@ void ProcessReceiveEvent(ENetPeer* peer, ENetPacket* packet) {
 			s->boolAllowWeapons = r->boolAllowWeapons;
 
 			levelPlayed = s->trackID;
+            selectedLaps = (2*s->lapID)+1;
 
 			printf(
 					"Track: %d, Laps: %d\n",
 					s->trackID,
-					(2*s->lapID)+1
+					selectedLaps
 				);
 
 			broadcastToPeersReliable(s, s->size);
@@ -337,6 +339,23 @@ void ProcessReceiveEvent(ENetPeer* peer, ENetPacket* packet) {
 			memcpy(&s->posX[0], &r->posX[0], 9);
 
 			broadcastToPeersReliable(s, s->size);
+
+			// Record frame
+			if (boolRaceAll) {
+
+				RecordPlayerPosition newFrame = {
+					.player_id = peerID,
+					.x = r->posX[0],
+					.y = r->posY[0],
+					.z = r->posZ[0],
+					.button_hold = s->buttonHold,
+					.rotation1 = s->kartRot1,
+					.rotation2 = s->kartRot2,
+				};
+
+				record_player_positions(replay, newFrame);
+			}
+
 			break;
 		}
 
@@ -452,6 +471,24 @@ void ProcessNewMessages() {
 				// or if this is the last peer to leave
 				else
 				{
+					// Generate timestamp
+					time_t now = time(NULL);
+					struct tm* t = localtime(&now);
+					char timestamp[20];
+					strftime(timestamp, sizeof(timestamp), "%m-%d-%Y_%H-%M-%S", t);
+
+					// Create the filename with the timestamp
+					char filename[40];
+					snprintf(filename, sizeof(filename), "replay_%s.bin", timestamp);
+
+					printf("Saving replay...\n");
+					int replay_save_result = write_replay_to_file(replay, filename);
+					if (replay_save_result == 0) {
+						printf("Replay saved as '%s'\n", filename);
+					} else {
+						printf("Replay couldn't be saved.\n");
+					}
+
 					printf("Rebooting...\n");
 					for (int i = 0; i < MAX_CLIENTS; i++)
 					{
@@ -502,6 +539,19 @@ void ServerState_Tick()
 
 			// send a message to the client
 			broadcastToPeersReliable(&sg, sg.size);
+
+			// Initialize replay data
+			printf("Initializing replay...\n");
+			replay = initialize_replay_data(levelPlayed, count_connected_peers(peerInfos, MAX_CLIENTS), selectedLaps);
+
+			if (replay != NULL) {
+				// Set player data to replayPlayers
+				for (int i = 0; i < clientCount; i++) {
+					PeerInfo peer = peerInfos[i];
+					printf(" - Registered clientId %d named as %s and selected character %d\n ", i, peer.name, peer.characterID);
+					register_player_to_replay(replay, i, peer.name, peer.characterID);
+				}
+			}
 		}
 	}
 
@@ -653,5 +703,8 @@ int main(int argc, char *argv[])
 	{
 		usleep(1);
 		ServerState_Tick();
+		if (boolRaceAll) {
+			advance_next_frame(replay);
+		}
 	}
 }
